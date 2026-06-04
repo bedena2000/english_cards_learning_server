@@ -55,4 +55,11 @@ export class StacksController {
   remove(@CurrentUser() user, @Param('id') id: string) {
     return this.stacksService.remove(BigInt(user.sub), BigInt(id));
   }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard) 
+  findOne(@CurrentUser() user: { sub: string } | undefined, @Param('id') id: string) {
+    const userId = user ? BigInt(user.sub) : null;
+    return this.stacksService.findOne(userId, BigInt(id));
+  }
 }
