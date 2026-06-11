@@ -15,6 +15,7 @@ import { CreateStackDto } from './dto/create-stack/create-stack';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { UpdateStackDto } from './dto/update-stack/update-stack';
+import { SetStackTagsDto } from 'src/tags/dto/set-stack-tags.dto';
 
 @Controller('stacks')
 export class StacksController {
@@ -57,9 +58,26 @@ export class StacksController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard) 
-  findOne(@CurrentUser() user: { sub: string } | undefined, @Param('id') id: string) {
+  @UseGuards(JwtAuthGuard)
+  findOne(
+    @CurrentUser() user: { sub: string } | undefined,
+    @Param('id') id: string,
+  ) {
     const userId = user ? BigInt(user.sub) : null;
     return this.stacksService.findOne(userId, BigInt(id));
+  }
+
+  @Post(':id/tags')
+  @UseGuards(JwtAuthGuard)
+  setTags(
+    @CurrentUser() user,
+    @Param('id') id: string,
+    @Body() dto: SetStackTagsDto,
+  ) {
+    return this.stacksService.setTagsOnStack(
+      BigInt(user.sub),
+      BigInt(id),
+      dto.tagIds,
+    );
   }
 }

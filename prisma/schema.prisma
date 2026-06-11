@@ -22,6 +22,8 @@ model User {
   stacks   Stack[]
   comments StackComment[]
   ratings  StackRating[]
+
+  tags Tag[]
 }
 
 model Stack {
@@ -37,6 +39,8 @@ model Stack {
   cards    Card[]
   comments StackComment[]
   ratings  StackRating[]
+
+  tags StackTag[]
 }
 
 model Card {
@@ -74,4 +78,25 @@ model StackRating {
   user  User  @relation(fields: [userId], references: [id])
 
   @@unique([stackId, userId]) // one rating per user per stack
+}
+
+model Tag {
+  id     BigInt @id @default(autoincrement())
+  userId BigInt
+  name   String @db.VarChar(50)
+
+  user   User       @relation(fields: [userId], references: [id])
+  stacks StackTag[]
+
+  @@unique([userId, name])
+}
+
+model StackTag {
+  stackId BigInt
+  tagId   BigInt
+
+  stack Stack @relation(fields: [stackId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([stackId, tagId])
 }

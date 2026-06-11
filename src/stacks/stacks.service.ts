@@ -114,24 +114,23 @@ export class StacksService {
     return { success: true };
   }
 
-
   async getStackOrThrow(stackId: bigint): Promise<Stack> {
     const stack = await this.prisma.stack.findUnique({
-      where: { id: stackId }
+      where: { id: stackId },
     });
 
-    if(!stack) {
+    if (!stack) {
       throw new NotFoundException('Stack not found');
     }
 
     return stack;
-  };
+  }
 
   assertCanView(stack: Stack, userId: bigint | null) {
-    if(stack.visibility === 'private' && stack.ownerId !== userId) {
+    if (stack.visibility === 'private' && stack.ownerId !== userId) {
       throw new ForbiddenException('Stack is private');
     }
-  };
+  }
 
   async findOne(userId: bigint | null, stackId: bigint) {
     const stack = await this.getStackOrThrow(stackId);
@@ -194,5 +193,37 @@ export class StacksService {
         ? { rating: myRating.rating, updatedAt: myRating.updatedAt }
         : null,
     };
+  }
+
+  async setTagsOnStack(userId: bigint, stackId: bigint, tagIds: string[]) {
+    // normalize ids to BigInt and dedupe
+    const tagIdsBig = Array.from(new Set(tagIds.map((t) => BigInt(t))));
+
+    // ensure stack exists and is owned by the user
+    const stack = await this.prisma.stack.findUnique({
+      where: { id: stackId },
+    });
+    if (!stack) throw new NotFoundException('Stack not found');
+    if (stack.ownerId !== userId) throw new ForbiddenException('Not owner');
+
+    // ensure all provided tags exist and belong to this user
+    const tags = await this.prisma.tag.findMany({
+      where: { id: { in: tagIdsBig }, userId },
+      select: { id: true, name: true },
+    });
+
+    if (tags.length !== tagIdsBig.length) {
+      throw new NotFoundException('One or more tags not found for this user');
+    }
+
+    // replace existing stack->tag links in a transaction
+    const createData = tagIdsBig.map((tagId) => ({ stackId, tagId }));
+    await this.prisma.$transaction([
+      this.prisma.stackTag.deleteMany({ where: { stackId } }),
+      this.prisma.stackTag.createMany({ data: createData }),
+    ]);
+
+    // return the tags attached
+    return tags.map((t) => ({ id: t.id.toString(), name: t.name }));
   }
 }

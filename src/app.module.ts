@@ -6,9 +6,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { StacksModule } from './stacks/stacks.module';
 import { CardsModule } from './cards/cards.module';
+import { TagsModule } from './tags/tags.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, AuthModule, StacksModule, CardsModule],
+  imports: [PrismaModule, UsersModule, AuthModule, StacksModule, CardsModule, TagsModule],
   controllers: [AppController],
   providers: [AppService],
 })
